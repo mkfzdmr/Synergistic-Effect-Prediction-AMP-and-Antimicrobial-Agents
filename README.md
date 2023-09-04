@@ -3,6 +3,8 @@ This repo consists of source codes, data files, and the final model for the deve
 
 The related scientific article is currently under evaluation. A detailed description will be added soon.
 
+Please find the current preprint here: [https://doi.org/10.21203/rs.3.rs-2166720/v1](https://doi.org/10.21203/rs.3.rs-2166720/v1)
+
 ## DOI
 
 will be added soon
