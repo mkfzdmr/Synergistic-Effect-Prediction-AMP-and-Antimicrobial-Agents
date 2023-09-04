@@ -1,0 +1,17 @@
+,Test Set,ACC,AUC
+0,Clss_Aminoglycoside,0.625,0.5799
+1,Clss_Azole,0.6,1
+2,Clss_Carbapenem,0.5143,0.44
+3,Clss_Cephalosporin,0.64,0.5417
+4,Clss_Chloramphenicol,0.7692,0.9
+5,Clss_Fluoroquinolone,0.6667,0.74
+6,Clss_Glycopeptide,0.6098,0.5374
+7,Clss_Lincosamide,1,1
+8,Clss_Macrolide,0.8039,0.8372
+9,Clss_Penicillin,0.5667,0.622
+10,Clss_Polymyxin,0.6389,0.7012
+11,Clss_Polypeptide,1,1
+12,Clss_Rifamycin,0.7333,0.7931
+13,Clss_Tetracycline,0.6111,0.5875
+14,Clss_ÊAminocoumarin,0.75,1
+15,Clss_ÊAminoglycoside,0.75,0.8889
