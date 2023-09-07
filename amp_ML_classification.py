@@ -23,24 +23,24 @@ from sklearn import preprocessing
 
 main_dir = "AMP_FICI_Classification"  #
 result_counter=1
-parent_dir = "C:/Users/Admin/Desktop/MAO_Machine_Learning_Library/" #change with it.
+parent_dir = "C:/Users/Admin/Desktop/MAO_Machine_Learning_Library/" #change with parent folder.
 train_data_dic = parent_dir + main_dir + "/dataset/" + "AMP_data_for_training_and_validation.csv"
 test_data_dic = parent_dir + main_dir + "/dataset/" + "AMP_data_for_external_test.csv"
 results_dic= parent_dir + main_dir +"/results/"
 
 
 ##########TRAIN-TARGET SPLIT##########
-train_data = pd.read_csv (train_data_dic)
-train_data['Antimic_MW'] = train_data['Antimic_MW'].apply(lambda x: str(x).replace(u'\xa0', u''))
-train_data["Antimic_MW"] = pd.to_numeric(train_data["Antimic_MW"])
+train_data = pd.read_csv (train_data_dic,encoding='unicode_escape')
+# train_data['Antimic_MW'] = train_data['Antimic_MW'].apply(lambda x: str(x).replace(u'\xa0', u''))
+# train_data["Antimic_MW"] = pd.to_numeric(train_data["Antimic_MW"])
 
 training_data=train_data.iloc[:,1:26]
 data_targets=train_data.iloc[:,27]
 training_data_with_Clsfr=pd.concat([training_data, data_targets], axis=1, join='inner')
 
-external_test = pd.read_csv (test_data_dic)
-external_test['Antimic_MW'] = external_test['Antimic_MW'].apply(lambda x: str(x).replace(u'\xa0', u''))
-external_test["Antimic_MW"] = pd.to_numeric(external_test["Antimic_MW"])
+external_test = pd.read_csv (test_data_dic,encoding='unicode_escape')
+# external_test['Antimic_MW'] = external_test['Antimic_MW'].apply(lambda x: str(x).replace(u'\xa0', u''))
+# external_test["Antimic_MW"] = pd.to_numeric(external_test["Antimic_MW"])
 
 external_test_data=external_test.iloc[:,1:26]
 external_test_targets=external_test.iloc[:,27]
@@ -124,8 +124,9 @@ for i in range(len(normalizers)):
 # scores_pd=pd.DataFrame()
 # #ROBUST NORMALIZER WINS!
 X_train, X_test, Y_train, Y_test = train_test_split(training_data_OHE_SMOTE[norm_count], data_targets_LE_SMOTE,
-                                                      test_size=0.25, random_state=1)
+                                                      test_size=0.1, random_state=1)
 
+#print("debug")
 #
 # classification_scoring = {'acc': 'accuracy',
 #             'f1m':'f1_macro', 'rec_macro':'recall_macro','pre_macro':'precision_macro',
@@ -170,13 +171,13 @@ from lightgbm import LGBMClassifier
 #model=LGBMClassifier(learning_rate=0.1, max_depth=10, max_features=0.3, min_samples_leaf=7, min_samples_split=10,
 #                            n_estimators=100, subsample=0.8500000000000001)
 
-model=LGBMClassifier(learning_rate=0.1, max_depth=20, max_features=0.7, min_samples_leaf=7,
-                            n_estimators=100, subsample=0.8)
+model=LGBMClassifier(learning_rate=0.1, max_depth=20, min_samples_leaf=7,
+                            n_estimators=100, subsample=0.8,min_child_samples=20)
 
 model.fit(X_train, Y_train)
-# import pickle
-# filename = 'finalized_AMP_FICI_model.sav'
-# pickle.dump(model, open(filename, 'wb'))
+import pickle
+filename = 'finalized_AMP_FICI_model_internal.sav'
+pickle.dump(model, open(filename, 'wb'))
 
 predictions = model.predict(X_test)
 print(accuracy_score(Y_test, predictions))
@@ -221,30 +222,36 @@ print('Gram positive: AUC: ',roc_auc_score(Y_test, model.predict_proba(X_test)[:
 print('debug')
 
 
-
-
 ##########  EXTERNAL TEST DATA PREDICTION##########
-X_test, Y_test = shuffle(external_test_data_OHE_normalized[norm_count], external_test_targets, random_state=2)
+## for better combination (for external test) uncomment below
+# norm_count=1
+# X_train, X_test, Y_train, Y_test = train_test_split(training_data_OHE_SMOTE[norm_count], data_targets_LE_SMOTE,
+#                                                     test_size=0.2, random_state=30)
+# model.fit(X_train, Y_train)
+# import pickle
+# filename = 'finalized_AMP_FICI_model_external.sav'
+# pickle.dump(model, open(filename, 'wb'))
+
+X_test, Y_test = shuffle(external_test_data_OHE_normalized[norm_count], external_test_targets, random_state=0)
 predictions = model.predict(X_test)
 print(accuracy_score(Y_test, predictions))
 print(confusion_matrix(Y_test, predictions))
 #print(classification_report(external_test_targets, predictions))
 print('debug')
 
-
 ########### Spacial Cases ###########
 #LOOCV by organism
-tmp_data=training_data_OHE_SMOTE[norm_count]
-tmp_data['FICI'] = data_targets_LE_SMOTE.values
+tmp_dataV2=training_data_OHE_SMOTE[norm_count]
+tmp_dataV2['FICI'] = data_targets_LE_SMOTE.values
 
 #print('Unique O: ',training_data.Syn_Spe.unique())
 print('Unique Organism Count: ',len(training_data.Syn_Spe.unique()))
 
-# starting from 82 OHE
+# starting from 80 OHE
 scores_org=pd.DataFrame()
-for organism_index in range(82,82+len(training_data.Syn_Spe.unique())):
- spe_train_data =tmp_data[tmp_data[tmp_data.columns[organism_index]] == False]
- spe_test_data =tmp_data[tmp_data[tmp_data.columns[organism_index]] == True]
+for organism_index in range(80,80+len(training_data.Syn_Spe.unique())):
+ spe_train_data =tmp_dataV2[tmp_dataV2[tmp_dataV2.columns[organism_index]] == False]
+ spe_test_data =tmp_dataV2[tmp_dataV2[tmp_dataV2.columns[organism_index]] == True]
  X_train=spe_train_data.iloc[:,0:-1]
  Y_train=spe_train_data.iloc[:,-1]
  X_test=spe_test_data.iloc[:,0:-1]
@@ -255,8 +262,8 @@ for organism_index in range(82,82+len(training_data.Syn_Spe.unique())):
     auc_s=roc_auc_score(Y_test, model.predict_proba(X_test)[:, 1])
  else:
     auc_s=1
- #print(tmp_data.columns[organism_index],': ',accuracy_score(Y_test, predictions))
- temp_pd = pd.DataFrame({'Test Set': str(tmp_data.columns[organism_index]), 'ACC': accuracy_score(Y_test, predictions),'AUC': auc_s}, index=[0])
+ #print(tmp_dataV2.columns[organism_index],': ',accuracy_score(Y_test, predictions))
+ temp_pd = pd.DataFrame({'Test Set': str(tmp_dataV2.columns[organism_index]), 'ACC': accuracy_score(Y_test, predictions),'AUC': auc_s}, index=[0])
  scores_org = pd.concat([scores_org, temp_pd], ignore_index=True)
 
 print(scores_org)
@@ -269,8 +276,8 @@ print('debug')
 
 ########### Spacial Cases ###########
 #LOOCV by drug class
-tmp_data=training_data_OHE_SMOTE[norm_count]
-tmp_data['FICI'] = data_targets_LE_SMOTE.values
+tmp_dataV2=training_data_OHE_SMOTE[norm_count]
+tmp_dataV2['FICI'] = data_targets_LE_SMOTE.values
 
 #print('Unique O: ',training_data.Syn_Spe.unique())
 print('Unique Class Count: ',len(training_data.Clss.unique()))
@@ -278,8 +285,8 @@ print('Unique Class Count: ',len(training_data.Clss.unique()))
 # starting from 49 OHE
 scores_clss=pd.DataFrame()
 for class_index in range(49,49+len(training_data.Clss.unique())):
- spe_train_data =tmp_data[tmp_data[tmp_data.columns[class_index]] == False]
- spe_test_data =tmp_data[tmp_data[tmp_data.columns[class_index]] == True]
+ spe_train_data =tmp_dataV2[tmp_dataV2[tmp_dataV2.columns[class_index]] == False]
+ spe_test_data =tmp_dataV2[tmp_dataV2[tmp_dataV2.columns[class_index]] == True]
  X_train=spe_train_data.iloc[:,0:-1]
  Y_train=spe_train_data.iloc[:,-1]
  X_test=spe_test_data.iloc[:,0:-1]
@@ -290,8 +297,8 @@ for class_index in range(49,49+len(training_data.Clss.unique())):
     auc_s=roc_auc_score(Y_test, model.predict_proba(X_test)[:, 1])
  else:
     auc_s=1
- #print(tmp_data.columns[class_index],': ',accuracy_score(Y_test, predictions))
- temp_pd = pd.DataFrame({'Test Set': str(tmp_data.columns[class_index]), 'ACC': accuracy_score(Y_test, predictions),
+ #print(tmp_dataV2.columns[class_index],': ',accuracy_score(Y_test, predictions))
+ temp_pd = pd.DataFrame({'Test Set': str(tmp_dataV2.columns[class_index]), 'ACC': accuracy_score(Y_test, predictions),
                          'AUC': auc_s}, index=[0])
  scores_clss = pd.concat([scores_clss, temp_pd], ignore_index=True)
 
